@@ -24,14 +24,13 @@ class CookieVision:
             return {"top": rect[1], "left": rect[0], "width": rect[2]-rect[0], "height": rect[3]-rect[1]}
         return None
     
-# NUNCA MEXER NAS CONFIGURAÇÕES DE TAMANHO
     def get_store_status(self, rect):
         # largura da loja
-        store_w = int(rect["width"] * 0.22)
+        store_w = int(rect["width"] * 0.17)
         store_x_start = rect["width"] - store_w
         
         # altura da loja
-        offset_y = int(rect["height"] * 0.265)
+        offset_y = int(rect["height"] * 0.188)
         height_loja = rect["height"] - offset_y
 
         raw_store = np.array(self.sct.grab({
@@ -46,12 +45,12 @@ class CookieVision:
         v_channel = cv2.convertScaleAbs(v_channel, alpha=1.5, beta=0)
 
         buyable_coords = []
-        item_h = 80
+        item_h = 64
         
         if self.debug:
             store_debug_img = v_channel.copy()
 
-        for i in range(12):
+        for i in range(14):
             y_start = i * item_h
             y_end = y_start + item_h
             if y_end > raw_store.shape[0]: break
@@ -88,11 +87,11 @@ class CookieVision:
 
     def get_upgrade_status(self, rect):
 
-        store_w = int(rect["width"] * 0.21)
+        store_w = int(rect["width"] * 0.17)
         store_x_start = rect["width"] - store_w
         
-        upgrade_y_start = int(rect["height"] * 0.13) 
-        upgrade_height = int(rect["height"] * 0.08)
+        upgrade_y_start = int(rect["height"] * 0.085) 
+        upgrade_height = int(rect["height"] * 0.06)
 
         raw_upgrades = np.array(self.sct.grab({
             "top": rect["top"] + upgrade_y_start,

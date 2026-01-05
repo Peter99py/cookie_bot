@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from src.finder.window_finder import encontrar_janela_cookie
 from src.action.clicker import clicar_no_biscoito
 from src.vision.cookie_vision import CookieVision
@@ -27,7 +28,6 @@ def main():
     qtd_golden_cookies = 0
     qtd_upgrades = 0
     qtd_loja = 0
-    qtd_cliques = 0
     
     rect = vision.get_window_rect()
     x_dinamico = int(rect["width"] * PERC_X)
@@ -38,6 +38,7 @@ def main():
 
     try:
         while True:
+            inicio = datetime.now()
             tempo_atual = time.time()
 
             # Verificação de Visão
@@ -79,7 +80,6 @@ def main():
             if ENABLE_CLICKING:
                 for _ in range(15):
                     clicar_no_biscoito(hwnd_jogo, x_dinamico, y_dinamico)
-                    qtd_cliques += 1
 
             rect = vision.get_window_rect()
             if rect:
@@ -90,11 +90,15 @@ def main():
             time.sleep(0.01)
 
     except KeyboardInterrupt:
+        fim = datetime.now()
+        duracao = fim - inicio
         print("\nResumo da sessão:")
+        print(f"início: {inicio.strftime('%d-%m-%Y %H:%M:%S')}")
+        print(f"fim: {fim.strftime('%d-%m-%Y %H:%M:%S')}")
+        print(f"Duração: {duracao}")
         print(f"Golden Cookies: {qtd_golden_cookies}")
         print(f"Upgrades: {qtd_upgrades}")
         print(f"Loja: {qtd_loja}")
-        print(f"Cliques: {qtd_cliques}")
         print("\nBot encerrado.")
 
 
