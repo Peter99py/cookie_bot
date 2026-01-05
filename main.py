@@ -23,6 +23,11 @@ def main():
     vision = CookieVision(debug=DEBUG_MODE)
     ultima_verificacao_visao = 0
     ultima_verificacao_loja = 0
+
+    qtd_golden_cookies = 0
+    qtd_upgrades = 0
+    qtd_loja = 0
+    qtd_cliques = 0
     
     rect = vision.get_window_rect()
     x_dinamico = int(rect["width"] * PERC_X)
@@ -42,11 +47,8 @@ def main():
                     if ponto_golden:
                         print(f"[{time.strftime('%H:%M:%S')}] Golden Cookie!")
                         clicar_no_biscoito(hwnd_jogo, ponto_golden[0], ponto_golden[1])
-                    
-                    rect = vision.get_window_rect()
-                    if rect:
-                        x_dinamico = int(rect["width"] * PERC_X)
-                        y_dinamico = int(rect["height"] * PERC_Y)
+                        qtd_golden_cookies += 1
+
                     ultima_verificacao_visao = tempo_atual
 
             # Lógica da Loja
@@ -59,6 +61,7 @@ def main():
                             print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
                             clicar_no_biscoito(hwnd_jogo, ponto_upgrade[0], ponto_upgrade[1])
                             time.sleep(0.5)
+                            qtd_upgrades += 1
 
                     # PRIORIDADE 2
                     if ENABLE_STORE:
@@ -68,6 +71,7 @@ def main():
                             alvo_compra = itens_disponiveis[-1]
                             print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
                             clicar_no_biscoito(hwnd_jogo, alvo_compra[0], alvo_compra[1])
+                            qtd_loja += 1
 
                 ultima_verificacao_loja = tempo_atual
 
@@ -75,11 +79,22 @@ def main():
             if ENABLE_CLICKING:
                 for _ in range(15):
                     clicar_no_biscoito(hwnd_jogo, x_dinamico, y_dinamico)
+                    qtd_cliques += 1
+
+            rect = vision.get_window_rect()
+            if rect:
+                x_dinamico = int(rect["width"] * PERC_X)
+                y_dinamico = int(rect["height"] * PERC_Y)
             
             # Anti derretimento da CPU
-            time.sleep(0.01) 
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
+        print("\nResumo da sessão:")
+        print(f"Golden Cookies: {qtd_golden_cookies}")
+        print(f"Upgrades: {qtd_upgrades}")
+        print(f"Loja: {qtd_loja}")
+        print(f"Cliques: {qtd_cliques}")
         print("\nBot encerrado.")
 
 
