@@ -16,6 +16,7 @@ INTERVALO_VISAO = 1.0
 INTERVALO_LOJA = 5.0
 
 def main():
+    inicio = datetime.now()
     hwnd_jogo = encontrar_janela_cookie()
     if not hwnd_jogo:
         print("Erro: Janela do Cookie Clicker não encontrada.")
@@ -38,7 +39,6 @@ def main():
 
     try:
         while True:
-            inicio = datetime.now()
             tempo_atual = time.time()
 
             # Verificação de Visão
@@ -78,7 +78,7 @@ def main():
 
             # Cliques no biscoito principal
             if ENABLE_CLICKING:
-                for _ in range(15):
+                for _ in range(10):
                     clicar_no_biscoito(hwnd_jogo, x_dinamico, y_dinamico)
 
             rect = vision.get_window_rect()
