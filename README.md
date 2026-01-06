@@ -1,4 +1,4 @@
-# Cookie Bot
+# Cookie Bot - Funciona apenas no Cookie Clicker Desktop (Steam)
 
 Bot automatizado para o jogo Cookie Clicker que realiza cliques no biscoito principal, coleta cookies dourados, compra upgrades e itens na loja.
 
