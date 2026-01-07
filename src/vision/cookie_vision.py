@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from mss import mss
-import win32gui
+from src.window_finder.window_finder import Beholder
 
 class CookieVision:
     def __init__(self, debug=False):
@@ -14,35 +14,17 @@ class CookieVision:
         self.lower_golden = np.array([20, 140, 85]) 
         self.upper_golden = np.array([33, 255, 190])
         self.min_opacidade = 235
+        
+        self.beholder = Beholder()
+        self.hwnd = self.beholder.hwnd
+        self.rect = self.beholder.rect
 
-        self.hwnd = self.encontrar_janela_cookie()
-        self.rect = self.get_window_rect()
         self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
-
-    def encontrar_janela_cookie(self):
-    # Busca o identificador (HWND) da janela.
-        def callback(hwnd, hwnds):
-            if win32gui.IsWindowVisible(hwnd):
-                titulo = win32gui.GetWindowText(hwnd)
-                if titulo.endswith("Cookie Clicker"):
-                    hwnds.append(hwnd)
-            return True
-
-        hwnds = []
-        win32gui.EnumWindows(callback, hwnds)
-        return hwnds[0] if hwnds else None
-
-    def get_window_rect(self):
-
-        if self.hwnd:
-            rect = win32gui.GetWindowRect(self.hwnd)
-            return {"top": rect[1], "left": rect[0], "width": rect[2]-rect[0], "height": rect[3]-rect[1]}
-        return None
     
     def get_screenshot(self):
         if self.rect:
             screenshot = np.array(self.sct.grab(self.rect))
-            return screenshot       
+            return screenshot
 
     def get_store_status(self):
         # largura da loja
@@ -100,6 +82,7 @@ class CookieVision:
         if self.debug:
             cv2.imshow("Debug Loja - Brilho (V)", store_debug_img)
             cv2.waitKey(1)
+            
             
         return buyable_coords
     
