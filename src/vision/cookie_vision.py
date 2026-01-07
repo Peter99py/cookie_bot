@@ -17,6 +17,7 @@ class CookieVision:
 
         self.hwnd = self.encontrar_janela_cookie()
         self.rect = self.get_window_rect()
+        self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
 
     def encontrar_janela_cookie(self):
     # Busca o identificador (HWND) da janela.
@@ -98,6 +99,7 @@ class CookieVision:
 
         if self.debug:
             cv2.imshow("Debug Loja - Brilho (V)", store_debug_img)
+            cv2.waitKey(1)
             
         return buyable_coords
     
@@ -142,6 +144,7 @@ class CookieVision:
                 print(f"DEBUG: Upgrade disponível! Brilho: {brilho_upgrade}")
 
             cv2.imshow("Debug Upgrades", debug_img)
+            cv2.waitKey(1)
 
         if pode_comprar:
 
@@ -191,11 +194,11 @@ class CookieVision:
 
     def close_pop_ups(self):
 
-        pop_ups_w = int(self.rect["width"] * 0.17)
-        pop_ups_x_start = self.rect["width"] - pop_ups_w
+        pop_ups_x_start = int(self.rect["width"] * 0.5)
+        pop_ups_w = int(self.rect["width"] * 0.2)
 
-        pop_ups_y_start = int(self.rect["height"] * 0.085) 
-        pop_ups_height = int(self.rect["height"] * 0.06)
+        pop_ups_y_start = int(self.rect["height"] * 0.6)
+        pop_ups_height = int(self.rect["height"] * 0.5)
 
         raw_pop_ups = np.array(self.sct.grab({
             "top": self.rect["top"] + pop_ups_y_start,
@@ -204,38 +207,36 @@ class CookieVision:
             "height": pop_ups_height
         }))
 
-        template = cv2.imread("src/vision/assets/close_popup.png")
-        template_y, template_x = template.shape[:2]
+        template_y, template_x = self.template_pop_up.shape[:2]
         img_bgr = cv2.cvtColor(raw_pop_ups, cv2.COLOR_BGRA2BGR)
 
-        result = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
-
+        result = cv2.matchTemplate(img_bgr, self.template_pop_up, cv2.TM_CCOEFF_NORMED)
         threshold = 0.8
 
         locations = np.where(result >= threshold)
+        locations = np.column_stack((locations[1], locations[0]))
+        locations_group = np.unique((locations // 10), axis=0) * 10
+
 
         if self.debug:
             debug_img = img_bgr.copy()
-        
-        if locations:
-            pass
-        else:
-            return None
 
         points = []
 
-        for pt in locations:
-            center_y = pt[0] + template_y // 2
-            center_x = pt[1] + template_x // 2
+        if locations_group.size > 0:
+            for x, y in locations_group:
+                center_y = y + template_y // 2
+                center_x = x + template_x // 2
 
-            real_center_y = pop_ups_y_start + center_y - 30 # 30 é compensação da barra da janela do windows
-            real_center_x = pop_ups_x_start + center_x
-            points.append((real_center_x, real_center_y))
+                real_center_y = pop_ups_y_start + center_y - 30 # 30 é compensação da barra da janela do windows
+                real_center_x = pop_ups_x_start + center_x
+                points.append((real_center_x, real_center_y))
 
-            if self.debug:
-                cv2.circle(debug_img, (center_x, center_y), 20, (0, 255, 0), 2)
+                if self.debug:
+                    cv2.circle(debug_img, (center_x, center_y), 15, (0, 255, 0), 2)
 
         if self.debug:
             cv2.imshow("Debug - Pop-up-killer", debug_img)
-        
-        return points[0]
+            cv2.waitKey(1)
+
+        return points[0] if points else None

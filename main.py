@@ -9,13 +9,13 @@ ENABLE_STORE           = True
 ENABLE_CLICKING        = True
 ENABLE_SUGAR_CLICKING  = True
 ENABLE_POP_UP_KILLER   = True
-DEBUG_MODE             = True
+DEBUG_MODE             = False
 
 PERC_X = 0.20
 PERC_Y = 0.45
 SUGAR_PERC_X = 0.307
 SUGAR_PERC_Y = 0.1
-INTERVALO_VISAO = 1.0
+INTERVALO_GOLDEN_COOKIE = 1.0
 INTERVALO_LOJA = 5.0
 INTERVALO_SUGAR = 3600
 INTERVALO_POP_UP_KILLER = 300
@@ -28,13 +28,15 @@ def main():
     ultima_verificacao_visao = 0
     ultima_verificacao_loja = 0
     ultima_verificacao_sugar = 0
+    ultima_verificacao_killer = 0
 
     qtd_golden_cookies = 0
     qtd_upgrades = 0
     qtd_loja = 0
+    qtd_pop_ups_mortas = 0
 
     if vision.rect:
-        print(f"Janela do jogo encontrada em: {vision.rect}")
+        print("Janela do jogo encontrada.")
     else:
         print("Janela do jogo não encontrada.")
         return
@@ -53,7 +55,7 @@ def main():
             tempo_atual = time.time()
 
             # Verificação de Visão
-            if tempo_atual - ultima_verificacao_visao >= INTERVALO_VISAO:
+            if tempo_atual - ultima_verificacao_visao >= INTERVALO_GOLDEN_COOKIE:
                 if ENABLE_GOLDEN_COOKIE:
                     ponto_golden = vision.find_any_golden()
                     if ponto_golden:
@@ -94,6 +96,13 @@ def main():
 
                 ultima_verificacao_sugar = tempo_atual
 
+            if tempo_atual - ultima_verificacao_killer >= INTERVALO_POP_UP_KILLER:
+                if ENABLE_POP_UP_KILLER:
+                    ponto_pop_up = vision.close_pop_ups()
+                    if ponto_pop_up:
+                        clicar_no_biscoito(vision.hwnd, ponto_pop_up[0], ponto_pop_up[1])
+                        qtd_pop_ups_mortas += 1
+
             # Cliques no biscoito principal
             if ENABLE_CLICKING:
                 for _ in range(10):
@@ -101,7 +110,7 @@ def main():
 
             x_dinamico = int(vision.rect["width"] * PERC_X)
             y_dinamico = int(vision.rect["height"] * PERC_Y)
-            
+
             # Anti derretimento da CPU
             time.sleep(0.01)
 
@@ -115,6 +124,7 @@ def main():
         print(f"Golden Cookies: {qtd_golden_cookies}")
         print(f"Upgrades: {qtd_upgrades}")
         print(f"Loja: {qtd_loja}")
+        print(f"Pop-ups mortos: {qtd_pop_ups_mortas}")
         print("\nBot encerrado.")
 
 
