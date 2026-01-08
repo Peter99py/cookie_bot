@@ -81,8 +81,11 @@ class CookieVision:
         upgrade_size = 50
         roi_upgrade = v_channel[10:55, 5:upgrade_size]
         brilho_upgrade = np.mean(roi_upgrade)
+        print(brilho_upgrade)
 
         pode_comprar = brilho_upgrade > 170
+
+        target = None
 
         if self.debug:
 
@@ -104,12 +107,11 @@ class CookieVision:
 
         if pode_comprar:
 
-            cX_real = store_x_start + (upgrade_size // 2)
-            cY_real = upgrade_y_start + (upgrade_size // 2)
-            return (cX_real, cY_real)
+            cx_real = store_x_start + (upgrade_size // 2)
+            cy_real = upgrade_y_start + (upgrade_size // 2)
             
-        return None
-
+        return (cx_real, cy_real)
+    
 
     def get_structure(self):
         # largura da loja
@@ -125,12 +127,12 @@ class CookieVision:
 
         img_bgr = cv2.cvtColor(raw_store, cv2.COLOR_BGRA2BGR)
         v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=2, beta=-100)
+        v_channel = cv2.convertScaleAbs(v_channel, alpha=3)
 
         if self.debug:
             store_debug_img = v_channel.copy()
 
-        target = [None, None]
+        target = None
 
         for name, template in self.templates_structures.items():
             res = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
@@ -141,20 +143,20 @@ class CookieVision:
                 
                 roi_v = v_channel[max_loc[1]:max_loc[1]+h, max_loc[0]:max_loc[0]+w]
                 brightness_mean = np.mean(roi_v)
-                can_buy = brightness_mean > 165
-
-                center_x = max_loc[0] + 15
-                center_y = max_loc[1] + 15
+                can_buy = brightness_mean > 240
+                
+                center_x = max_loc[0]
+                center_y = max_loc[1]
 
                 if can_buy:
                     cx_real = store_x_start + center_x
                     cy_real = center_y
 
                     if self.debug:
-                        cv2.circle(store_debug_img, (center_x, center_y), 15, (0, 255, 0), 2)
+                        cv2.circle(store_debug_img, (cx_real, cy_real), 15, (0, 255, 0), 2)
                         print(f"DEBUG: Estrutura '{name}' disponível para compra! Brilho: {brightness_mean}")
 
-                    target = [(cx_real, cy_real), name]
+                    target = (cx_real, cy_real)
                     break
 
         if self.debug:
@@ -162,7 +164,7 @@ class CookieVision:
             cv2.waitKey(1)
 
         return target
-    
+
 
     def find_any_golden(self):
 

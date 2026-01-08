@@ -6,7 +6,7 @@ from src.vision.cookie_vision import CookieVision
 ENABLE_GOLDEN_COOKIE   = True
 ENABLE_STORE           = True
 ENABLE_UPGRADES        = True
-ENABLE_STRUCTURES      = False
+ENABLE_STRUCTURES      = True
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
@@ -35,6 +35,7 @@ def beholder_eyes():
     qtd_golden_cookies = 0
     qtd_upgrades = 0
     qtd_loja = 0
+    lista_loja = []
     qtd_hand_of_fate = 0
     qtd_pop_ups_mortas = 0
 
@@ -84,14 +85,16 @@ def beholder_eyes():
 
                         # PRIORIDADE 2
                     if ENABLE_STRUCTURES and not comprou_upgrade:
-                            itens_disponiveis = vision.get_structure()
+                            comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
-                            if itens_disponiveis:
+                            if comprar:
                                 # Clica no urtimo
-                                alvo_compra = itens_disponiveis[-1]
                                 print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
-                                clicar_no_biscoito(vision.hwnd, alvo_compra[0], alvo_compra[1])
+                                clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])
                                 qtd_loja += 1
+                                lista_loja.append(comprar[1])
+
+
 
                     ultima_verificacao_loja = tempo_atual
 
@@ -141,6 +144,7 @@ def beholder_eyes():
         print(f"Golden Cookies: {qtd_golden_cookies}")
         print(f"Upgrades: {qtd_upgrades}")
         print(f"Loja: {qtd_loja}")
+        print(f"Lista de estruturas compradas na loja: {list(set(lista_loja))}")
         print(f"Hand of Fate clicados: {qtd_hand_of_fate}")
         print(f"Pop-ups mortos: {qtd_pop_ups_mortas}")
         print("\nBot encerrado.")
