@@ -1,0 +1,1 @@
+start "Bot de Cliques" cmd /k "venv\Scripts\activate && python main_clicker.py"

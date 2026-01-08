@@ -20,6 +20,11 @@ class CookieVision:
         self.rect = self.beholder.rect
 
         self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
+        self.template_hand_of_fate = cv2.imread("src/assets/hand_of_fate.png")
+
+        #largura dos blocos
+        self.middle_block_x_start = int(self.rect["width"] * 0.3083333333)
+        self.middle_block_w = int(self.rect["width"] * 0.5208333333)
     
     def get_screenshot(self):
         if self.rect:
@@ -211,7 +216,7 @@ class CookieVision:
                 center_y = y + template_y // 2
                 center_x = x + template_x // 2
 
-                real_center_y = pop_ups_y_start + center_y - 30 # 30 é compensação da barra da janela do windows
+                real_center_y = pop_ups_y_start + center_y - 23 # 23 é compensação da barra da janela do windows
                 real_center_x = pop_ups_x_start + center_x
                 points.append((real_center_x, real_center_y))
 
@@ -223,3 +228,44 @@ class CookieVision:
             cv2.waitKey(1)
 
         return points[0] if points else None
+    
+    def hand_of_fate(self):
+        
+        middle_x_start = self.middle_block_x_start
+        middle_w = self.middle_block_w
+
+        raw_middle = np.array(self.sct.grab({
+            "top": self.rect["top"],
+            "left": self.rect["left"] + middle_x_start,
+            "width": middle_w,
+            "height": self.rect["height"]}))
+        
+        template_y, template_x = self.template_hand_of_fate.shape[:2]
+        img_bgr = cv2.cvtColor(raw_middle, cv2.COLOR_BGRA2BGR)
+
+        result = cv2.matchTemplate(img_bgr, self.template_hand_of_fate, cv2.TM_CCOEFF_NORMED)
+        _, max_val, _, max_loc = cv2.minMaxLoc(result)
+
+        threshold = 0.91
+
+        if max_val < threshold:
+            return None
+        
+        top = max_loc[1]
+        left = max_loc[0]
+
+        center_y = top + template_y // 2
+        center_x = left + template_x // 2
+
+        real_center_y = center_y
+        real_center_x = middle_x_start + center_x
+
+        if self.debug:
+            debug_img = img_bgr.copy()
+
+        if self.debug:
+            cv2.circle(debug_img, (center_x, center_y), 10, (0, 255, 0), 2)
+            cv2.imshow("Debug - hand-of-fate", debug_img)
+            cv2.waitKey(1)
+
+        return real_center_x, real_center_y, max_val
