@@ -22,34 +22,96 @@ class CookieVision:
         self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
         self.template_hand_of_fate = cv2.imread("src/assets/hand_of_fate.png")
 
-        #largura dos blocos
+        # Templates estruturas
+        self.template_cursor_button = cv2.imread("src/assets/cursor_button.png")
+        self.template_grandma_button = cv2.imread("src/assets/grandma_button.png")
+        self.template_farm_button = cv2.imread("src/assets/farm_button.png")
+
+        # Largura dos blocos
+        # Bloco do meio
         self.middle_block_x_start = int(self.rect["width"] * 0.3083333333)
         self.middle_block_w = int(self.rect["width"] * 0.5208333333)
+        # Bloco da direita (Loja)
+        self.store_x_start = int(self.middle_block_x_start + self.middle_block_w)
+        self.store_w = int(self.rect["width"] * 0.1666666666)
+            # Bloco Upgrades
+        self.upgrade_y_start = int(self.rect["height"] * 0.0787037037)
+        self.upgrade_h = int(self.rect["height"] * 0.0509259259)
+
     
     def get_screenshot(self):
         if self.rect:
             screenshot = np.array(self.sct.grab(self.rect))
             return screenshot
 
-    def get_store_status(self):
-        # largura da loja
-        store_w = int(self.rect["width"] * 0.17)
-        store_x_start = self.rect["width"] - store_w
-        
-        # altura da loja
-        offset_y = int(self.rect["height"] * 0.188)
-        height_loja = self.rect["height"] - offset_y
 
-        raw_store = np.array(self.sct.grab({
-            "top": self.rect["top"] + offset_y,
+    def get_upgrade(self):
+
+        store_x_start = self.store_x_start
+        store_w = self.store_w
+
+        upgrade_y_start = self.upgrade_y_start
+        upgrade_height = self.upgrade_h
+
+        raw_upgrades = np.array(self.sct.grab({
+            "top": 2 + upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
             "width": store_w,
-            "height": height_loja
+            "height": upgrade_height
+        }))
+
+        img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
+        v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
+        v_channel = cv2.convertScaleAbs(v_channel, alpha=3)
+
+        upgrade_size = 50
+        roi_upgrade = v_channel[10:55, 5:upgrade_size]
+        brilho_upgrade = np.mean(roi_upgrade)
+
+        pode_comprar = brilho_upgrade > 170
+
+        if self.debug:
+
+            debug_img = v_channel.copy()
+            cv2.rectangle(debug_img, (10, 5), (55, upgrade_size), 255, 2)
+
+            local_x = (upgrade_size // 2)
+            local_y = (upgrade_size // 2)
+            
+            if pode_comprar:
+                
+                cv2.circle(debug_img, (local_x, local_y), 10, 255, -1) 
+                cv2.circle(debug_img, (local_x, local_y), 12, 0, 2)
+                
+                print(f"DEBUG: Upgrade disponível! Brilho: {brilho_upgrade}")
+
+            cv2.imshow("Debug Upgrades", debug_img)
+            cv2.waitKey(1)
+
+        if pode_comprar:
+
+            cX_real = store_x_start + (upgrade_size // 2)
+            cY_real = upgrade_y_start + (upgrade_size // 2)
+            return (cX_real, cY_real)
+            
+        return None
+
+
+    def get_structure(self):
+        # largura da loja
+        store_x_start = self.store_x_start
+        store_w = self.store_w
+
+        raw_store = np.array(self.sct.grab({
+            "top": int(0),
+            "left": self.rect["left"] + store_x_start,
+            "width": store_w,
+            "height": self.rect["height"]
         }))
 
         img_bgr = cv2.cvtColor(raw_store, cv2.COLOR_BGRA2BGR)
         v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=1.5, beta=0)
+        v_channel = cv2.convertScaleAbs(v_channel, alpha=1.5)
 
         buyable_coords = []
         item_h = 64
@@ -81,7 +143,7 @@ class CookieVision:
 
                 # Lista de onde clicar
                 cX_real = store_x_start + local_cX
-                cY_real = offset_y + local_cY - 30
+                cY_real = local_cY
                 buyable_coords.append((cX_real, cY_real))
 
         if self.debug:
@@ -90,57 +152,6 @@ class CookieVision:
             
             
         return buyable_coords
-    
-
-    def get_upgrade_status(self):
-
-        store_w = int(self.rect["width"] * 0.17)
-        store_x_start = self.rect["width"] - store_w
-
-        upgrade_y_start = int(self.rect["height"] * 0.085) 
-        upgrade_height = int(self.rect["height"] * 0.06)
-
-        raw_upgrades = np.array(self.sct.grab({
-            "top": self.rect["top"] + upgrade_y_start,
-            "left": self.rect["left"] + store_x_start,
-            "width": store_w,
-            "height": upgrade_height
-        }))
-
-        img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
-        v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=2.0, beta=50)
-
-        upgrade_size = 60
-        roi_upgrade = v_channel[5:upgrade_size, 5:upgrade_size]
-        brilho_upgrade = np.mean(roi_upgrade)
-
-        pode_comprar = brilho_upgrade > 170
-
-        if self.debug:
-
-            debug_img = v_channel.copy()
-
-            local_x = (upgrade_size // 2)
-            local_y = (upgrade_size // 2)
-            
-            if pode_comprar:
-                
-                cv2.circle(debug_img, (local_x, local_y), 10, 255, -1) 
-                cv2.circle(debug_img, (local_x, local_y), 12, 0, 2)
-                
-                print(f"DEBUG: Upgrade disponível! Brilho: {brilho_upgrade}")
-
-            cv2.imshow("Debug Upgrades", debug_img)
-            cv2.waitKey(1)
-
-        if pode_comprar:
-
-            cX_real = store_x_start + (upgrade_size // 2) + 5
-            cY_real = upgrade_y_start + (upgrade_size // 2) - 30 + 5 # 30 é compensação da barra da janela do windows
-            return (cX_real, cY_real)
-            
-        return None
 
 
     def find_any_golden(self):

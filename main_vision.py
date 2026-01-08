@@ -6,7 +6,7 @@ from src.vision.cookie_vision import CookieVision
 ENABLE_GOLDEN_COOKIE   = True
 ENABLE_STORE           = True
 ENABLE_UPGRADES        = True
-ENABLE_STRUCTURES      = True
+ENABLE_STRUCTURES      = False
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
@@ -66,22 +66,25 @@ def beholder_eyes():
                     ultima_verificacao_visao = tempo_atual
 
             # Lógica da Loja
-            if ENABLE_STRUCTURES:
+            if ENABLE_STORE:
                 if tempo_atual - ultima_verificacao_loja >= INTERVALO_LOJA:
                     
+                    comprou_upgrade = False
+
                     if ENABLE_UPGRADES:
                         # PRIORIDADE 1
                         #print(f"[{time.strftime('%H:%M:%S')}] Verificando Upgrades...")
-                        ponto_upgrade = vision.get_upgrade_status()
+                        ponto_upgrade = vision.get_upgrade()
                         if ponto_upgrade:
                             print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
                             clicar_no_biscoito(vision.hwnd, ponto_upgrade[0], ponto_upgrade[1])
                             time.sleep(0.5)
                             qtd_upgrades += 1
+                            comprou_upgrade = True
 
                         # PRIORIDADE 2
-                    if ENABLE_STORE:
-                            itens_disponiveis = vision.get_store_status()
+                    if ENABLE_STRUCTURES and not comprou_upgrade:
+                            itens_disponiveis = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
                             if itens_disponiveis:
                                 # Clica no urtimo
