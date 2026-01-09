@@ -15,7 +15,7 @@ DEBUG_MODE             = False
 INTERVALO_GOLDEN_COOKIE = 1.0
 INTERVALO_LOJA = 5.0
 INTERVALO_POP_UP_KILLER = 300
-INTERVALO_HAND_OF_FATE = 600
+INTERVALO_HAND_OF_FATE = 250
 INTERVALO_SUGAR = 3600
 
 SUGAR_PERC_X = 0.307
@@ -87,7 +87,7 @@ def beholder_eyes():
                     if ENABLE_STRUCTURES and not comprou_upgrade:
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
-                            if comprar:
+                            if comprar[0] is not None:
                                 # Clica no urtimo
                                 print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
                                 clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])

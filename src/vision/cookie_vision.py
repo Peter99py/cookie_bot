@@ -33,7 +33,9 @@ class CookieVision:
             "temple_button": cv2.imread("src/assets/temple_button.png"),
             "wizard_tower_button": cv2.imread("src/assets/wizard_tower_button.png"),
             "shipment_button": cv2.imread("src/assets/shipment_button.png"),
-            "alchemy_lab_button": cv2.imread("src/assets/alchemy_lab_button.png")
+            "alchemy_lab_button": cv2.imread("src/assets/alchemy_lab_button.png"),
+            "portal_button": cv2.imread("src/assets/portal_button.png"),
+            "time_machine_button": cv2.imread("src/assets/time_machine_button.png")
         }
         self.templates_structures = dict(reversed(self.templates_structures.items()))
 
