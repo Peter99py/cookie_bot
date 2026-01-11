@@ -4,6 +4,7 @@ class Beholder:
     def __init__(self):
         self.hwnd = self.encontrar_janela_cookie()
         self.rect = self.get_window_rect()
+        self.janelas_filhas = self.listar_janelas_filhas(self.hwnd) if self.hwnd else []
 
     def encontrar_janela_cookie(self):
     # Busca o identificador (HWND) da janela.
@@ -17,10 +18,25 @@ class Beholder:
         hwnds = []
         win32gui.EnumWindows(callback, hwnds)
         return hwnds[0] if hwnds else None
+    
+    def listar_janelas_filhas(self, parent_hwnd):
+        filhas = []
+        def callback(hwnd, lista):
+            classe = win32gui.GetClassName(hwnd)
+            titulo = win32gui.GetWindowText(hwnd)
+            lista.append(hwnd)
+            return True
+        
+        win32gui.EnumChildWindows(parent_hwnd, callback, filhas)
+        return filhas
 
     def get_window_rect(self):
 
         if self.hwnd:
             rect = win32gui.GetWindowRect(self.hwnd)
-            return {"top": rect[1], "left": rect[0], "width": rect[2]-rect[0], "height": rect[3]-rect[1]}
+            self.rect = {"top": rect[1],
+                         "left": rect[0],
+                         "width": rect[2]-rect[0],
+                         "height": rect[3]-rect[1]}
+            return self.rect
         return None

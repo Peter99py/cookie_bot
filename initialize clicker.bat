@@ -1,1 +1,1 @@
-start "Bot de Cliques" cmd /k "venv\Scripts\activate && python main_clicker.py"
+start "Bot de Cliques" powershell -NoExit -Command "& { .\venv\Scripts\Activate.ps1; python main_clicker.py }"

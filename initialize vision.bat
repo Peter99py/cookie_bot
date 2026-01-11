@@ -1,1 +1,1 @@
-start "Bot de Visao" cmd /k "venv\Scripts\activate && python main_vision.py"
+start "Bot de Visao" powershell -NoExit -Command "& { .\venv\Scripts\Activate.ps1; python main_vision.py }"

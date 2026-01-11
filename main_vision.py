@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from src.action.clicker import clicar_no_biscoito
+from src.action.clicker import clicar_no_biscoito, scroll_no_cookie
 from src.vision.cookie_vision import CookieVision
 
 ENABLE_GOLDEN_COOKIE   = True
@@ -10,12 +10,12 @@ ENABLE_STRUCTURES      = True
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
-DEBUG_MODE             = False
+DEBUG_MODE             = True
 
 INTERVALO_GOLDEN_COOKIE = 1.0
 INTERVALO_LOJA = 5.0
 INTERVALO_POP_UP_KILLER = 300
-INTERVALO_HAND_OF_FATE = 250
+INTERVALO_HAND_OF_FATE = 200
 INTERVALO_SUGAR = 3600
 
 SUGAR_PERC_X = 0.307
@@ -26,6 +26,8 @@ def beholder_eyes():
 
     vision = CookieVision(debug=DEBUG_MODE)
 
+    vision.check_store_y()
+
     ultima_verificacao_visao = 0
     ultima_verificacao_loja = 0
     ultima_verificacao_killer = 0
@@ -35,14 +37,16 @@ def beholder_eyes():
     qtd_golden_cookies = 0
     qtd_upgrades = 0
     qtd_loja = 0
-    lista_loja = []
+    #lista_loja = []
     qtd_hand_of_fate = 0
     qtd_pop_ups_mortas = 0
 
-    x_dinamico_sugar = int(vision.rect["width"] * SUGAR_PERC_X)
-    y_dinamico_sugar = int(vision.rect["height"] * SUGAR_PERC_Y)
+    rect = vision.rect
 
-    if vision.rect:
+    x_dinamico_sugar = int(rect["width"] * SUGAR_PERC_X)
+    y_dinamico_sugar = int(rect["height"] * SUGAR_PERC_Y)
+
+    if rect:
         print("Janela do jogo encontrada.")
     else:
         print("Janela do jogo não encontrada.")
@@ -51,8 +55,28 @@ def beholder_eyes():
     print("Visão computacional iniciada! Pressione Ctrl+C para parar.")
     print(f"Flags: Golden:{ENABLE_GOLDEN_COOKIE}, Upgrades:{ENABLE_UPGRADES}, Loja:{ENABLE_STORE}, Killer:{ENABLE_POP_UP_KILLER}")
 
+    def resume(inicio, qtd_golden, qtd_upgrades, qtd_loja, qtd_fate, qtd_popups):
+        fim = datetime.now()
+        duracao = fim - inicio
+        print("\n" + "="*30)
+        print("Resumo da sessão:")
+        print(f"Início: {inicio.strftime('%d-%m-%Y %H:%M:%S')}")
+        print(f"Fim: {fim.strftime('%d-%m-%Y %H:%M:%S')}")
+        print(f"Duração: {duracao}")
+        print(f"Golden Cookies: {qtd_golden}")
+        print(f"Upgrades: {qtd_upgrades}")
+        print(f"Loja: {qtd_loja}")
+        print(f"Hand of Fate clicados: {qtd_fate}")
+        print(f"Pop-ups mortos: {qtd_popups}")
+        print("="*30)
+        print("Bot encerrado.")
+
     try:
         while True:
+            if not vision.rect_check():
+                resume()
+                break
+
             tempo_atual = time.time()
             if ENABLE_GOLDEN_COOKIE:
             # Verificação de Visão
@@ -75,16 +99,20 @@ def beholder_eyes():
                     if ENABLE_UPGRADES:
                         # PRIORIDADE 1
                         #print(f"[{time.strftime('%H:%M:%S')}] Verificando Upgrades...")
+                        scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
+                        time.sleep(0.5)
                         ponto_upgrade = vision.get_upgrade()
                         if ponto_upgrade:
                             print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
                             clicar_no_biscoito(vision.hwnd, ponto_upgrade[0], ponto_upgrade[1])
-                            time.sleep(0.5)
+                            time.sleep(0.2)
                             qtd_upgrades += 1
                             comprou_upgrade = True
 
                         # PRIORIDADE 2
                     if ENABLE_STRUCTURES and not comprou_upgrade:
+                            scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), -10)
+                            time.sleep(0.5)
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
                             if comprar[0] is not None:
@@ -92,11 +120,12 @@ def beholder_eyes():
                                 print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
                                 clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])
                                 qtd_loja += 1
-                                lista_loja.append(comprar[1])
-
-
+                                #lista_loja.append(comprar[1])
+                            time.sleep(0.1)                            
+                            scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
 
                     ultima_verificacao_loja = tempo_atual
+
 
             # HAND OF FATE
             if ENABLE_HAND_OF_FATE:
@@ -110,6 +139,7 @@ def beholder_eyes():
 
                     ultima_verificacao_hand_of_fate = tempo_atual
 
+
             # POP-UP KILLER
             if ENABLE_POP_UP_KILLER:
                 if tempo_atual - ultima_verificacao_killer >= INTERVALO_POP_UP_KILLER:
@@ -122,11 +152,12 @@ def beholder_eyes():
                 
                     ultima_verificacao_killer = tempo_atual
 
+
             # SUGAR CLICKER
             if ENABLE_SUGAR_CLICKING:
                 if tempo_atual - ultima_verificacao_sugar >= INTERVALO_SUGAR:
-                    x_dinamico_sugar = int(vision.rect["width"] * SUGAR_PERC_X)
-                    y_dinamico_sugar = int(vision.rect["height"] * SUGAR_PERC_Y)
+                    x_dinamico_sugar = int(rect["width"] * SUGAR_PERC_X)
+                    y_dinamico_sugar = int(rect["height"] * SUGAR_PERC_Y)
                     clicar_no_biscoito(vision.hwnd, x_dinamico_sugar, y_dinamico_sugar)
                     #print(f"local do click açucar: {x_dinamico_sugar}, {y_dinamico_sugar}")
 
@@ -144,7 +175,7 @@ def beholder_eyes():
         print(f"Golden Cookies: {qtd_golden_cookies}")
         print(f"Upgrades: {qtd_upgrades}")
         print(f"Loja: {qtd_loja}")
-        print(f"Lista de estruturas compradas na loja: {list(set(lista_loja))}")
+        #print(f"Lista de estruturas compradas na loja: {list(set(lista_loja))}")
         print(f"Hand of Fate clicados: {qtd_hand_of_fate}")
         print(f"Pop-ups mortos: {qtd_pop_ups_mortas}")
         print("\nBot encerrado.")
