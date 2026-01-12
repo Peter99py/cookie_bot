@@ -411,4 +411,7 @@ class CookieVision:
 
 
     def im_a_landlord(self):
+
+        
+
         pass

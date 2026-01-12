@@ -26,7 +26,8 @@ def beholder_eyes():
 
     vision = CookieVision(debug=DEBUG_MODE)
 
-    scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
+    scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
+    time.sleep(0.3)
     vision.check_store_y()
 
     ultima_verificacao_visao = 0
@@ -100,7 +101,7 @@ def beholder_eyes():
                     if ENABLE_UPGRADES:
                         # PRIORIDADE 1
                         #print(f"[{time.strftime('%H:%M:%S')}] Verificando Upgrades...")
-                        scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
+                        scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
                         time.sleep(0.5)
                         ponto_upgrade = vision.get_upgrade()
                         if ponto_upgrade:
@@ -112,7 +113,7 @@ def beholder_eyes():
 
                         # PRIORIDADE 2
                     if ENABLE_STRUCTURES and not comprou_upgrade:
-                            scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), -10)
+                            scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), -10)
                             time.sleep(1)
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
@@ -123,7 +124,7 @@ def beholder_eyes():
                                 qtd_loja += 1
                                 #lista_loja.append(comprar[1])
                             time.sleep(0.1)                            
-                            scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
+                            scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
 
                     ultima_verificacao_loja = tempo_atual
 
@@ -145,7 +146,7 @@ def beholder_eyes():
             if ENABLE_POP_UP_KILLER:
                 if tempo_atual - ultima_verificacao_killer >= INTERVALO_POP_UP_KILLER:
                     #print(f"[{time.strftime('%H:%M:%S')}] Verificando pop-ups...")
-                    ponto_pop_up = vision.close_pop_ups()
+                    ponto_pop_up = vision.pop_up_killer()
                     if ponto_pop_up:
                         print(f"[{time.strftime('%H:%M:%S')}] Pop-up morto!")
                         clicar_no_biscoito(vision.hwnd, ponto_pop_up[0], ponto_pop_up[1])

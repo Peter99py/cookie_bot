@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from mss import mss
 from src.window_finder.window_finder import Beholder
+import time
 
 
 # cv2.circle(store_debug_img, centro, raio, cor, espessura)
@@ -64,12 +65,15 @@ class CookieVision:
             self.structures_dimensions[name] = template.shape[:2]
 
         # Largura dos blocos
-        # Bloco do meio
-        self.middle_block_x_start = int(self.rect["width"] * 0.3083333333)
-        self.middle_block_w = int(self.rect["width"] * 0.5208333333)
+        # Bloco da esquerda
+        self.left_block_x_start = int(self.rect["left"])
+        self.left_block_w = int(self.rect["width"] * 0.3020833333)
         # Bloco da direita (Loja)
-        self.store_x_start = int(self.middle_block_x_start + self.middle_block_w)
-        self.store_w = int(self.rect["width"] * 0.1666666666)
+        self.right_block_x_start = int(self.rect["width"] - self.rect["width"] * 0.1666666666)
+        self.righ_block_w = int(self.rect["width"] * 0.1666666666)
+        # Bloco do meio
+        self.middle_block_x_start = self.left_block_w
+        self.middle_block_w = self.rect["width"] - self.left_block_w - self.righ_block_w
         # Bloco Upgrades
         self.upgrade_y_start = int(self.rect["height"] * 0.0787037037)
         self.upgrade_h = int(self.rect["height"] * 0.0509259259)
@@ -77,15 +81,15 @@ class CookieVision:
 
     def check_store_y(self):
 
-        store_x_start = self.store_x_start
-        store_w = self.store_w
+        store_x_start = self.right_block_x_start
+        righ_block_w = self.righ_block_w
 
         upgrade_y_start = self.upgrade_y_start
 
         raw_upgrades = np.array(self.sct.grab({
             "top": 2 + upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
-            "width": store_w,
+            "width": righ_block_w,
             "height": self.rect["height"]
         }))
 
@@ -95,11 +99,34 @@ class CookieVision:
 
         _, max_val, _, _ = cv2.minMaxLoc(result)
 
-        threshold = 0.75
-        print(f"valor maximo do milk selector{max_val}")
+        threshold = 0.9
+        print(f"1º Check - Valor: {max_val}")
 
         if max_val >= threshold:
             self.upgrade_y_start += 76
+            return
+
+        time.sleep(0.5)
+        print("\nReconhecimento do ícone falhou, checando novamente a altura da loja")
+        
+        raw_upgrades2 = np.array(self.sct.grab({
+            "top": 2 + upgrade_y_start,
+            "left": self.rect["left"] + store_x_start,
+            "width": righ_block_w,
+            "height": self.rect["height"]
+            }))
+        
+        img_bgr2 = cv2.cvtColor(raw_upgrades2, cv2.COLOR_BGRA2BGR)
+        res2 = cv2.matchTemplate(img_bgr2, self.template_milk, cv2.TM_CCOEFF_NORMED)
+        _, max_val2, _, _ = cv2.minMaxLoc(res2)
+
+        print(f"2º Check - Valor: {max_val2}")
+
+        if max_val2 >= threshold:
+            self.upgrade_y_start += 76
+            print("Sucesso no 2º check.")
+        else:
+            print("Ambos os checks falharam. O template não foi encontrado.")
 
 
     def rect_check(self):
@@ -116,8 +143,8 @@ class CookieVision:
 
     def get_upgrade(self):
 
-        store_x_start = self.store_x_start
-        store_w = self.store_w
+        store_x_start = self.right_block_x_start
+        righ_block_w = self.righ_block_w
 
         upgrade_y_start = self.upgrade_y_start
         upgrade_height = self.upgrade_h
@@ -125,7 +152,7 @@ class CookieVision:
         raw_upgrades = np.array(self.sct.grab({
             "top": 2 + upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
-            "width": store_w,
+            "width": righ_block_w,
             "height": upgrade_height
         }))
 
@@ -170,13 +197,13 @@ class CookieVision:
 
     def get_structure(self):
         # largura da loja
-        store_x_start = self.store_x_start
-        store_w = self.store_w
+        store_x_start = self.right_block_x_start
+        righ_block_w = self.righ_block_w
 
         raw_store = np.array(self.sct.grab({
             "top": int(0),
             "left": self.rect["left"] + store_x_start,
-            "width": store_w,
+            "width": righ_block_w,
             "height": self.rect["height"]
         }))
 
@@ -198,7 +225,7 @@ class CookieVision:
                 
                 roi_v = v_channel[max_loc[1]:max_loc[1]+h, max_loc[0]:max_loc[0]+w]
                 brightness_mean = np.mean(roi_v)
-                can_buy = brightness_mean > 164
+                can_buy = brightness_mean > 165
 
                 center_x = max_loc[0] + 15
                 center_y = max_loc[1] + 15
@@ -276,13 +303,13 @@ class CookieVision:
         return None
     
 
-    def close_pop_ups(self):
+    def pop_up_killer(self):
 
-        pop_ups_x_start = int(self.rect["width"] * 0.5)
-        pop_ups_w = int(self.rect["width"] * 0.2)
+        pop_ups_x_start = self.middle_block_x_start
+        pop_ups_w = self.middle_block_w
 
-        pop_ups_y_start = int(self.rect["height"] * 0.6)
-        pop_ups_height = int(self.rect["height"] * 0.5)
+        pop_ups_y_start = int(self.rect["top"])
+        pop_ups_height = int(self.rect["height"])
 
         raw_pop_ups = np.array(self.sct.grab({
             "top": self.rect["top"] + pop_ups_y_start,
