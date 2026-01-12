@@ -22,7 +22,7 @@ class CookieVision:
         self.config_wrath = {
             "name": "wrath",
             "lower": np.array([1, 200, 98]),
-            "upper": np.array([10, 255, 100])
+            "upper": np.array([10, 230, 100])
             }
 
         self.min_opacidade = 230
@@ -36,6 +36,7 @@ class CookieVision:
 
         self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
         self.template_hand_of_fate = cv2.imread("src/assets/hand_of_fate.png")
+        self.template_milk = cv2.imread("src/assets/milk_button.png")
 
         # Templates estruturas
         self.templates_structures = {
@@ -53,15 +54,14 @@ class CookieVision:
             "time_machine_button": cv2.imread("src/assets/time_machine_button.png"),
             "antim_condenser_button": cv2.imread("src/assets/antim_condenser_button.png"),
             "prism_button": cv2.imread("src/assets/prism_button.png"),
-            "chancemaker_button": cv2.imread("src/assets/chancemaker_button.png")
+            "chancemaker_button": cv2.imread("src/assets/chancemaker_button.png"),
+            "fractal_engine_button": cv2.imread("src/assets/fractal_engine_button.png")
         }
         self.templates_structures = dict(reversed(self.templates_structures.items()))
 
         self.structures_dimensions = {}
         for name, template in self.templates_structures.items():
             self.structures_dimensions[name] = template.shape[:2]
-
-        self.template_milk = cv2.imread("src/assets/milk_button.png")
 
         # Largura dos blocos
         # Bloco do meio
@@ -81,7 +81,6 @@ class CookieVision:
         store_w = self.store_w
 
         upgrade_y_start = self.upgrade_y_start
-        upgrade_height = self.upgrade_h
 
         raw_upgrades = np.array(self.sct.grab({
             "top": 2 + upgrade_y_start,
@@ -96,7 +95,8 @@ class CookieVision:
 
         _, max_val, _, _ = cv2.minMaxLoc(result)
 
-        threshold = 0.9
+        threshold = 0.75
+        print(f"valor maximo do milk selector{max_val}")
 
         if max_val >= threshold:
             self.upgrade_y_start += 76
@@ -132,13 +132,13 @@ class CookieVision:
         img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
 
         v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=2, beta=90)
+        v_channel = cv2.convertScaleAbs(v_channel, alpha=2, beta=92)
 
         upgrade_size = 50
         roi_upgrade = v_channel[10:55, 5:upgrade_size]
         brilho_upgrade = np.mean(roi_upgrade)
 
-        pode_comprar = brilho_upgrade > 201
+        pode_comprar = brilho_upgrade > 202
 
         if self.debug:
 
@@ -182,7 +182,7 @@ class CookieVision:
 
         img_bgr = cv2.cvtColor(raw_store, cv2.COLOR_BGRA2BGR)
         v_channel = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)[:, :, 2]
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=2, beta=-100)
+        v_channel = cv2.convertScaleAbs(v_channel, alpha=1.2, beta=1)
 
         if self.debug:
             store_debug_img = v_channel.copy()
@@ -198,7 +198,7 @@ class CookieVision:
                 
                 roi_v = v_channel[max_loc[1]:max_loc[1]+h, max_loc[0]:max_loc[0]+w]
                 brightness_mean = np.mean(roi_v)
-                can_buy = brightness_mean > 166
+                can_buy = brightness_mean > 164
 
                 center_x = max_loc[0] + 15
                 center_y = max_loc[1] + 15
@@ -271,7 +271,7 @@ class CookieVision:
                         else:
                             self.count_wrath += 1
 
-                        return (cX, cY)
+                        return (cX, cY, color_cfg["name"])
 
         return None
     

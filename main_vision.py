@@ -10,10 +10,10 @@ ENABLE_STRUCTURES      = True
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
-DEBUG_MODE             = True
+DEBUG_MODE             = False
 
 INTERVALO_GOLDEN_COOKIE = 1.0
-INTERVALO_LOJA = 5.0
+INTERVALO_LOJA = 7.0
 INTERVALO_POP_UP_KILLER = 300
 INTERVALO_HAND_OF_FATE = 200
 INTERVALO_SUGAR = 3600
@@ -26,6 +26,7 @@ def beholder_eyes():
 
     vision = CookieVision(debug=DEBUG_MODE)
 
+    scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), 10)
     vision.check_store_y()
 
     ultima_verificacao_visao = 0
@@ -84,7 +85,7 @@ def beholder_eyes():
                     #print(f"[{time.strftime('%H:%M:%S')}] Verificando Golden Cookie...")
                     ponto_golden = vision.find_any_golden()
                     if ponto_golden:
-                        print(f"[{time.strftime('%H:%M:%S')}] Golden Cookie!")
+                        print(f"[{time.strftime('%H:%M:%S')}] {ponto_golden[2]}")
                         clicar_no_biscoito(vision.hwnd, ponto_golden[0], ponto_golden[1])
                         qtd_golden_cookies += 1
 
@@ -112,7 +113,7 @@ def beholder_eyes():
                         # PRIORIDADE 2
                     if ENABLE_STRUCTURES and not comprou_upgrade:
                             scroll_no_cookie(vision.hwnd, (vision.store_x_start + 70), (vision.upgrade_y_start + 70), -10)
-                            time.sleep(0.5)
+                            time.sleep(1)
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
                             if comprar[0] is not None:
