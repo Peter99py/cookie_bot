@@ -6,11 +6,11 @@ from src.vision.cookie_vision import CookieVision
 ENABLE_GOLDEN_COOKIE   = True
 ENABLE_STORE           = True
 ENABLE_UPGRADES        = True
-ENABLE_STRUCTURES      = True
+ENABLE_STRUCTURES      = False
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
-DEBUG_MODE             = False
+DEBUG_MODE             = True
 
 INTERVALO_GOLDEN_COOKIE = 1.0
 INTERVALO_LOJA = 7.0
@@ -114,16 +114,15 @@ def beholder_eyes():
                         # PRIORIDADE 2
                     if ENABLE_STRUCTURES and not comprou_upgrade:
                             scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), -10)
-                            time.sleep(1)
+                            time.sleep(1.2)
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
                             if comprar[0] is not None:
-                                # Clica no urtimo
                                 print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
                                 clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])
                                 qtd_loja += 1
                                 #lista_loja.append(comprar[1])
-                            time.sleep(0.1)                            
+                            time.sleep(0.2)                            
                             scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
 
                     ultima_verificacao_loja = tempo_atual
