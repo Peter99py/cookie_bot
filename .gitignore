@@ -5,3 +5,4 @@ test.py
 tests.py
 config.json
 gui
+*.xlsx

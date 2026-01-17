@@ -1,4 +1,5 @@
 import time
+import numpy as np
 from datetime import datetime
 from src.action.clicker import clicar_no_biscoito, scroll_no_cookie
 from src.vision.cookie_vision import CookieVision
@@ -6,14 +7,14 @@ from src.vision.cookie_vision import CookieVision
 ENABLE_GOLDEN_COOKIE   = True
 ENABLE_STORE           = True
 ENABLE_UPGRADES        = True
-ENABLE_STRUCTURES      = False
+ENABLE_STRUCTURES      = True
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
-DEBUG_MODE             = True
+DEBUG_MODE             = False
 
 INTERVALO_GOLDEN_COOKIE = 1.0
-INTERVALO_LOJA = 7.0
+INTERVALO_LOJA = 5.0
 INTERVALO_POP_UP_KILLER = 300
 INTERVALO_HAND_OF_FATE = 200
 INTERVALO_SUGAR = 3600
@@ -27,7 +28,7 @@ def beholder_eyes():
     vision = CookieVision(debug=DEBUG_MODE)
 
     scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
-    time.sleep(0.3)
+    time.sleep(1.2)
     vision.check_store_y()
 
     ultima_verificacao_visao = 0
@@ -57,26 +58,9 @@ def beholder_eyes():
     print("Visão computacional iniciada! Pressione Ctrl+C para parar.")
     print(f"Flags: Golden:{ENABLE_GOLDEN_COOKIE}, Upgrades:{ENABLE_UPGRADES}, Loja:{ENABLE_STORE}, Killer:{ENABLE_POP_UP_KILLER}")
 
-    def resume(inicio, qtd_golden, qtd_upgrades, qtd_loja, qtd_fate, qtd_popups):
-        fim = datetime.now()
-        duracao = fim - inicio
-        print("\n" + "="*30)
-        print("Resumo da sessão:")
-        print(f"Início: {inicio.strftime('%d-%m-%Y %H:%M:%S')}")
-        print(f"Fim: {fim.strftime('%d-%m-%Y %H:%M:%S')}")
-        print(f"Duração: {duracao}")
-        print(f"Golden Cookies: {qtd_golden}")
-        print(f"Upgrades: {qtd_upgrades}")
-        print(f"Loja: {qtd_loja}")
-        print(f"Hand of Fate clicados: {qtd_fate}")
-        print(f"Pop-ups mortos: {qtd_popups}")
-        print("="*30)
-        print("Bot encerrado.")
-
     try:
         while True:
             if not vision.rect_check():
-                resume()
                 break
 
             tempo_atual = time.time()
@@ -102,7 +86,7 @@ def beholder_eyes():
                         # PRIORIDADE 1
                         #print(f"[{time.strftime('%H:%M:%S')}] Verificando Upgrades...")
                         scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
-                        time.sleep(0.5)
+                        time.sleep(1.2)
                         ponto_upgrade = vision.get_upgrade()
                         if ponto_upgrade:
                             print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
@@ -179,6 +163,19 @@ def beholder_eyes():
         #print(f"Lista de estruturas compradas na loja: {list(set(lista_loja))}")
         print(f"Hand of Fate clicados: {qtd_hand_of_fate}")
         print(f"Pop-ups mortos: {qtd_pop_ups_mortas}")
+
+        print(f"\nListagem distinta de todos os dados: {np.unique(vision.pls_god)}")
+        print(f"\nMínimo de todos os dados: {np.min(vision.pls_god)}")
+        print(f"Média dos valores únicos de todos os dados: {np.mean(np.unique(vision.pls_god))}")
+        print(f"Mediana de todos os dados: {np.median(vision.pls_god)}")
+        print(f"Máximo de todos os dados: {np.max(vision.pls_god)}")
+        
+        print(f"\nListagem distinta de todos os dados: {np.unique(vision.pls_god_can_buy)}")
+        print(f"\nMínimo dos dados, compráveis: {np.min(vision.pls_god_can_buy)}")
+        print(f"Média dos valores únicos de todos os dados: {np.mean(np.unique(vision.pls_god))}")
+        print(f"Mediana dos dados, compráveis: {np.median(vision.pls_god_can_buy)}")
+        print(f"Máximo de todos os dados: {np.max(vision.pls_god_can_buy)}")
+
         print("\nBot encerrado.")
 
 

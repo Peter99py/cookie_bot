@@ -37,8 +37,12 @@ class CookieVision:
 
         self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
         self.template_hand_of_fate = cv2.imread("src/assets/hand_of_fate.png")
-        self.template_milk = cv2.imread("src/assets/milk_button.png")
-
+        self.check_store_templates = {
+            "milk_button": cv2.imread("src/assets/milk_button.png"),
+            "festive_biscuit": cv2.imread("src/assets/festive_biscuit_button.png"),
+            "ghostly biscuit": cv2.imread("src/assets/ghostly_biscuits_button.png")
+        }
+        """
         # Templates estruturas
         self.templates_structures = {
             "cursor_button": cv2.imread("src/assets/cursor_button.png"),
@@ -63,6 +67,7 @@ class CookieVision:
         self.structures_dimensions = {}
         for name, template in self.templates_structures.items():
             self.structures_dimensions[name] = template.shape[:2]
+        """
 
         # Largura dos blocos
         # Bloco da esquerda
@@ -70,19 +75,27 @@ class CookieVision:
         self.left_block_w = int(self.rect["width"] * 0.3020833333)
         # Bloco da direita (Loja)
         self.right_block_x_start = int(self.rect["width"] - self.rect["width"] * 0.1666666666)
-        self.righ_block_w = int(self.rect["width"] * 0.1666666666)
+        self.right_block_w = int(self.rect["width"] * 0.16)
         # Bloco do meio
         self.middle_block_x_start = self.left_block_x_start + self.left_block_w
-        self.middle_block_w = self.rect["width"] - self.left_block_w - self.righ_block_w
+        self.middle_block_w = self.rect["width"] - self.left_block_w - self.right_block_w
         # Bloco Upgrades
         self.upgrade_y_start = int(self.rect["height"] * 0.0787037037)
         self.upgrade_h = int(self.rect["height"] * 0.0509259259)
+        self.upgrade_w = int(self.right_block_w * 0.4)
+        # Bloco Structures
+        self.structures_y_start = int(self.upgrade_y_start + self.rect["height"] * 0.1)
+        self.structures_w = int(self.right_block_w * 0.94)
+        self.structures_h = int(self.rect["height"] - self.structures_y_start - self.rect["height"] * 0.0462962962)
+
+        self.pls_god= []
+        self.pls_god_can_buy = []
     
 
     def check_store_y(self):
 
         store_x_start = self.right_block_x_start
-        righ_block_w = self.righ_block_w
+        righ_block_w = self.right_block_w
 
         upgrade_y_start = self.upgrade_y_start
 
@@ -94,19 +107,22 @@ class CookieVision:
         }))
 
         img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
-
-        result = cv2.matchTemplate(img_bgr, self.template_milk, cv2.TM_CCOEFF_NORMED)
-
-        _, max_val, _, _ = cv2.minMaxLoc(result)
-
         threshold = 0.9
-        print(f"1º Check - Valor: {max_val}")
 
-        if max_val >= threshold:
-            self.upgrade_y_start += 76
-            return
+        for name, template in self.check_store_templates.items():
+            res = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
+            _, max_val, _, max_loc = cv2.minMaxLoc(res)
 
-        time.sleep(0.5)
+            print(f"1 º Check - template {name} - Valor: {max_val}")
+
+            if max_val >= threshold:
+                self.upgrade_y_start += 76
+                self.structures_y_start += 76
+                self.structures_h -= 76
+                print("Sucesso no 1º Check")
+
+                return            
+
         print("\nReconhecimento do ícone falhou, checando novamente a altura da loja")
         
         raw_upgrades2 = np.array(self.sct.grab({
@@ -117,16 +133,21 @@ class CookieVision:
             }))
         
         img_bgr2 = cv2.cvtColor(raw_upgrades2, cv2.COLOR_BGRA2BGR)
-        res2 = cv2.matchTemplate(img_bgr2, self.template_milk, cv2.TM_CCOEFF_NORMED)
-        _, max_val2, _, _ = cv2.minMaxLoc(res2)
 
-        print(f"2º Check - Valor: {max_val2}")
+        for name2, template2 in self.check_store_templates.items():
+            res2 = cv2.matchTemplate(img_bgr2, template2, cv2.TM_CCOEFF_NORMED)
+            _, max_val2, _, max_loc2 = cv2.minMaxLoc(res2)
 
-        if max_val2 >= threshold:
-            self.upgrade_y_start += 76
-            print("Sucesso no 2º check.")
-        else:
-            print("Ambos os checks falharam. O template não foi encontrado.")
+            print(f"2 º Check - template {name2} - Valor: {max_val2}")
+
+            if max_val2 >= threshold:
+                self.upgrade_y_start += 76
+                self.structures_y_start += 76
+                self.structures_h -= 76
+                print("Sucesso no 2º check.")
+                return  
+
+        print("Matendo a altura da loja como default.")
 
 
     def rect_check(self):
@@ -144,7 +165,7 @@ class CookieVision:
     def get_upgrade(self):
 
         store_x_start = self.right_block_x_start
-        righ_block_w = self.righ_block_w
+        upgrade_w = self.upgrade_w
 
         upgrade_y_start = self.upgrade_y_start
         upgrade_height = self.upgrade_h
@@ -152,28 +173,33 @@ class CookieVision:
         raw_upgrades = np.array(self.sct.grab({
             "top": 2 + upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
-            "width": righ_block_w,
+            "width": upgrade_w,
             "height": upgrade_height
         }))
 
         img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
-        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        s_channel = hsv[:, :, 1] # Saturação
-        v_channel = hsv[:, :, 2] # Brilho
+        img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+        l_channel = img_lab[:, :, 0]
         
-        v_channel = cv2.subtract(v_channel, (s_channel * 0.1).astype(np.uint8))
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=0.3, beta=60)
+        rectangle_y, rectangle_h, rectangle_x, rectangle_w = 1, 55, 1, 55
+        roi_upgrade = l_channel[rectangle_y:rectangle_h, rectangle_x:rectangle_w]
 
-        rectangle_y, rectangle_h, rectangle_x, rectangle_w = 17, 35, 17, 35
-        roi_upgrade = v_channel[rectangle_y:rectangle_h, rectangle_x:rectangle_w]
-        brilho_upgrade = np.mean(roi_upgrade)
+        pixels = roi_upgrade.flatten()
 
-        pode_comprar = brilho_upgrade >= 105
+        pixels_ordenados = np.sort(pixels)
+        
+        quantidade_top = int(len(pixels_ordenados) * 0.15)
+        top_pixels = pixels_ordenados[-quantidade_top:]
+        
+        brilho_upgrade = np.mean(top_pixels)
 
+        pode_comprar = brilho_upgrade >= 120
+
+        self.pls_god.append(brilho_upgrade)
         if self.debug:
-
+            
             print(f"Brilho do upgrade: {brilho_upgrade}")
-            debug_img = v_channel.copy()
+            debug_img = l_channel.copy()
             cv2.rectangle(debug_img, (rectangle_x, rectangle_y), (rectangle_w, rectangle_h), (255, 255, 255), 2)
             cv2.putText(debug_img, "ROI", (rectangle_x + 1, rectangle_y + 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
@@ -181,7 +207,7 @@ class CookieVision:
             cv2.waitKey(1)
 
         if pode_comprar:
-
+            self.pls_god_can_buy.append(brilho_upgrade)
             cX_real = store_x_start + (rectangle_w // 2)
             cY_real = upgrade_y_start + (rectangle_h // 2)
             return (cX_real, cY_real)
@@ -190,63 +216,82 @@ class CookieVision:
 
 
     def get_structure(self):
-        # largura da loja
-        store_x_start = self.right_block_x_start
-        righ_block_w = self.righ_block_w
+            store_x_start = self.right_block_x_start
+            
+            structures_y_start = self.structures_y_start
+            structures_w = self.structures_w
+            structures_h = self.structures_h
 
-        raw_store = np.array(self.sct.grab({
-            "top": int(0),
-            "left": self.rect["left"] + store_x_start,
-            "width": righ_block_w,
-            "height": self.rect["height"]
-        }))
+            raw_store = np.array(self.sct.grab({
+                "top": structures_y_start,
+                "left": self.rect["left"] + store_x_start,
+                "width": structures_w,
+                "height": structures_h
+            }))
 
-        img_bgr = cv2.cvtColor(raw_store, cv2.COLOR_BGRA2BGR)
-        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        s_channel = hsv[:, :, 1] # Saturação
-        v_channel = hsv[:, :, 2] # Brilho
-        
-        v_channel = cv2.subtract(v_channel, (s_channel * 0.1).astype(np.uint8))
-        v_channel = cv2.convertScaleAbs(v_channel, alpha=1, beta=60)
+            img_bgr = cv2.cvtColor(raw_store, cv2.COLOR_BGRA2BGR)
+            hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+            s_channel = hsv[:, :, 1]
+            v_channel = hsv[:, :, 2]
+            
+            v_channel = cv2.subtract(v_channel, (s_channel * 0.1).astype(np.uint8))
+            v_channel = cv2.convertScaleAbs(v_channel, alpha=1, beta=60)
 
-        if self.debug:
-            store_debug_img = v_channel.copy()
+            if self.debug:
+                store_debug_img = v_channel.copy()
 
-        target = [None, None]
+            target = [None]
+            
+            box_size = 40
+            step = 20
+            threshold = 210
 
-        for name, template in self.templates_structures.items():
-            res = cv2.matchTemplate(img_bgr, template, cv2.TM_CCOEFF_NORMED)
-            _, max_val, _, max_loc = cv2.minMaxLoc(res)
-
-            if max_val >= 0.8:
-                w, h = self.structures_dimensions[name]
+            found_in_row = False
+            
+            for y in range(structures_h - box_size, 0, -step):
                 
-                roi_v = v_channel[max_loc[1]:max_loc[1]+h, max_loc[0]:max_loc[0]+w]
-                brightness_mean = np.mean(roi_v)
-                can_buy = brightness_mean > 194
-                
-                if self.debug:
-                    print(f"brilho da estrutura {name}: {brightness_mean}")
+                best_block_in_row = None
+                max_brightness_row = 0
 
-                center_x = max_loc[0] + 15
-                center_y = max_loc[1] + 15
-
-                if can_buy:
-                    cx_real = store_x_start + center_x
-                    cy_real = center_y
+                for x in range(0, structures_w - box_size, step):
+                    
+                    roi = v_channel[y : y + box_size, x : x + box_size]
+                    
+                    avg_brightness = np.mean(roi)
 
                     if self.debug:
-                        cv2.circle(store_debug_img, (center_x, center_y), 15, (0, 255, 0), 2)
-                        print(f"DEBUG: Estrutura '{name}' disponível para compra! Brilho: {brightness_mean}")
+                        cv2.rectangle(store_debug_img, (x, y), (x + box_size, y + box_size), (50, 50, 50), 1)
 
-                    target = [(cx_real, cy_real), name]
+                    if avg_brightness > threshold:
+
+                        if avg_brightness > max_brightness_row:
+                            max_brightness_row = avg_brightness
+                            center_x = x + (box_size // 2)
+                            center_y = y + (box_size // 2)
+                            
+                            best_block_in_row = (center_x, center_y, avg_brightness, x, y)
+                
+                if best_block_in_row:
+                    cx, cy, brilho, rx, ry = best_block_in_row
+                    
+                    cx_real = store_x_start + cx
+                    cy_real = structures_y_start + cy
+                    
+
+                    target = [(cx_real, cy_real)]
+                    
+                    if self.debug:
+                        cv2.rectangle(store_debug_img, (rx, ry), (rx + box_size, ry + box_size), (0, 255, 0), 2)
+                        print(f"Estrutura encontrada (X={cx_real}) - (Y={cy_real}) - Brilho: {brilho:.2f}")
+                    
+                    found_in_row = True
                     break
 
-        if self.debug:
-            cv2.imshow("Debug Loja - Estruturas", store_debug_img)
-            cv2.waitKey(1)
+            if self.debug:
+                cv2.imshow("Debug Loja - Get structure", store_debug_img)
+                cv2.waitKey(1)
 
-        return target
+            return target
     
 
     def find_any_golden(self):
