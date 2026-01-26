@@ -11,16 +11,21 @@ ENABLE_STRUCTURES      = True
 ENABLE_HAND_OF_FATE    = True
 ENABLE_POP_UP_KILLER   = True
 ENABLE_SUGAR_CLICKING  = True
+ENABLE_GREEN_LETTERS   = True
 DEBUG_MODE             = False
 
-INTERVALO_GOLDEN_COOKIE = 1.0
-INTERVALO_LOJA = 5.0
+INTERVALO_GOLDEN_COOKIE = 0.5
+INTERVALO_LOJA = 3.0
 INTERVALO_POP_UP_KILLER = 300
 INTERVALO_HAND_OF_FATE = 200
 INTERVALO_SUGAR = 3600
+INTERVALO_GREEN_L = 1
 
 SUGAR_PERC_X = 0.307
 SUGAR_PERC_Y = 0.1
+
+GREEN_LETTERS_X = 0.52
+GREEN_LETTERS_Y = 0.04
 
 def beholder_eyes():
     inicio = datetime.now()
@@ -36,6 +41,7 @@ def beholder_eyes():
     ultima_verificacao_killer = 0
     ultima_verificacao_hand_of_fate = 0
     ultima_verificacao_sugar = 0
+    ultima_verificacao_green_l = 0
 
     qtd_golden_cookies = 0
     qtd_upgrades = 0
@@ -55,13 +61,12 @@ def beholder_eyes():
         print("Janela do jogo não encontrada.")
         return
 
-    print("Visão computacional iniciada! Pressione Ctrl+C para parar.")
     print(f"Flags: Golden:{ENABLE_GOLDEN_COOKIE}, Upgrades:{ENABLE_UPGRADES}, Loja:{ENABLE_STORE}, Killer:{ENABLE_POP_UP_KILLER}")
 
     try:
         while True:
-            if not vision.rect_check():
-                break
+            #if not vision.rect_check():
+            #    break
 
             tempo_atual = time.time()
             if ENABLE_GOLDEN_COOKIE:
@@ -80,7 +85,7 @@ def beholder_eyes():
             if ENABLE_STORE:
                 if tempo_atual - ultima_verificacao_loja >= INTERVALO_LOJA:
                     
-                    comprou_upgrade = False
+                    #comprou_upgrade = False
 
                     if ENABLE_UPGRADES:
                         # PRIORIDADE 1
@@ -88,33 +93,40 @@ def beholder_eyes():
                         scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
                         time.sleep(1.2)
                         ponto_upgrade = vision.get_upgrade()
-                        if ponto_upgrade:
-                            print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
+                        if ponto_upgrade[0]:
+                            #print(f"[{time.strftime('%H:%M:%S')}] Comprei Upgrade")
                             clicar_no_biscoito(vision.hwnd, ponto_upgrade[0], ponto_upgrade[1])
                             time.sleep(0.2)
                             qtd_upgrades += 1
-                            comprou_upgrade = True
+                            #comprou_upgrade = True
 
                         # PRIORIDADE 2
-                    if ENABLE_STRUCTURES and not comprou_upgrade:
+                    if ENABLE_STRUCTURES:
                             scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), -10)
                             time.sleep(1.2)
                             comprar = vision.get_structure()
                             #print(f"verificando itens_disponiveis: {itens_disponiveis}")
                             if comprar[0] is not None:
-                                print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
+                                #print(f"[{time.strftime('%H:%M:%S')}] Comprei estrutura da loja")
                                 clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])
+                                time.sleep(0.5)
                                 qtd_loja += 1
                                 #lista_loja.append(comprar[1])
-                            time.sleep(0.2)                            
-                            scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
+                            else:
+                                    scroll_no_cookie(vision.hwnd, (vision.right_block_x_start + 70), (vision.upgrade_y_start + 70), 10)
+                                    time.sleep(1.2)
+                                    comprar = vision.get_structure()
+                                    if comprar[0] is not None:
+                                        clicar_no_biscoito(vision.hwnd, comprar[0][0], comprar[0][1])
+                                        qtd_loja += 1
+                                        time.sleep(0.5)
 
                     ultima_verificacao_loja = tempo_atual
 
 
             # HAND OF FATE
             if ENABLE_HAND_OF_FATE:
-                if tempo_atual - ultima_verificacao_hand_of_fate >= INTERVALO_HAND_OF_FATE:
+                if tempo_atual - ultima_verificacao_hand_of_fate >= INTERVALO_HAND_OF_FATE: 
                     #print(f"[{time.strftime('%H:%M:%S')}] Verificando Hand of Fate...")
                     ponto_hand_of_fate = vision.hand_of_fate()
                     if ponto_hand_of_fate:
@@ -148,6 +160,14 @@ def beholder_eyes():
 
                     ultima_verificacao_sugar = tempo_atual
 
+            if ENABLE_GREEN_LETTERS:
+                if tempo_atual - ultima_verificacao_green_l >= INTERVALO_GREEN_L:
+                    x_dinamico_greenn_l = int(rect["width"] * GREEN_LETTERS_X)
+                    y_dinamico_green_l = int(rect["height"] * GREEN_LETTERS_Y)
+                    clicar_no_biscoito(vision.hwnd, x_dinamico_greenn_l, y_dinamico_green_l)
+
+                    ultima_verificacao_green_l = tempo_atual
+
             time.sleep(0.01)
 
     except KeyboardInterrupt:
@@ -163,18 +183,6 @@ def beholder_eyes():
         #print(f"Lista de estruturas compradas na loja: {list(set(lista_loja))}")
         print(f"Hand of Fate clicados: {qtd_hand_of_fate}")
         print(f"Pop-ups mortos: {qtd_pop_ups_mortas}")
-
-        print(f"\nListagem distinta de todos os dados: {np.unique(vision.pls_god)}")
-        print(f"\nMínimo de todos os dados: {np.min(vision.pls_god)}")
-        print(f"Média dos valores únicos de todos os dados: {np.mean(np.unique(vision.pls_god))}")
-        print(f"Mediana de todos os dados: {np.median(vision.pls_god)}")
-        print(f"Máximo de todos os dados: {np.max(vision.pls_god)}")
-        
-        print(f"\nListagem distinta de todos os dados: {np.unique(vision.pls_god_can_buy)}")
-        print(f"\nMínimo dos dados, compráveis: {np.min(vision.pls_god_can_buy)}")
-        print(f"Média dos valores únicos de todos os dados: {np.mean(np.unique(vision.pls_god))}")
-        print(f"Mediana dos dados, compráveis: {np.median(vision.pls_god_can_buy)}")
-        print(f"Máximo de todos os dados: {np.max(vision.pls_god_can_buy)}")
 
         print("\nBot encerrado.")
 

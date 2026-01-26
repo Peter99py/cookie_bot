@@ -23,7 +23,7 @@ class CookieVision:
         self.config_wrath = {
             "name": "wrath",
             "lower": np.array([1, 200, 98]),
-            "upper": np.array([10, 230, 100])
+            "upper": np.array([10, 220, 100])
             }
 
         self.min_opacidade = 240
@@ -40,7 +40,8 @@ class CookieVision:
         self.check_store_templates = {
             "milk_button": cv2.imread("src/assets/milk_button.png"),
             "festive_biscuit": cv2.imread("src/assets/festive_biscuit_button.png"),
-            "ghostly biscuit": cv2.imread("src/assets/ghostly_biscuits_button.png")
+            "ghostly_biscuit": cv2.imread("src/assets/ghostly_biscuits_button.png"),
+            "lovesick_biscuit": cv2.imread("src/assets/lovesick_biscuito_button.png")
         }
         """
         # Templates estruturas
@@ -81,15 +82,14 @@ class CookieVision:
         self.middle_block_w = self.rect["width"] - self.left_block_w - self.right_block_w
         # Bloco Upgrades
         self.upgrade_y_start = int(self.rect["height"] * 0.0787037037)
-        self.upgrade_h = int(self.rect["height"] * 0.0509259259)
-        self.upgrade_w = int(self.right_block_w * 0.4)
+        self.upgrade_h = int(self.rect["height"] * 0.06)
+        self.upgrade_w = int(self.right_block_w * 0.2)
         # Bloco Structures
-        self.structures_y_start = int(self.upgrade_y_start + self.rect["height"] * 0.1)
         self.structures_w = int(self.right_block_w * 0.94)
-        self.structures_h = int(self.rect["height"] - self.structures_y_start - self.rect["height"] * 0.0462962962)
+        self.structures_h = int(self.rect["height"] - self.upgrade_y_start - self.rect["height"] * 0.0462962962)
 
-        self.pls_god= []
-        self.pls_god_can_buy = []
+        #self.pls_god= []
+        #self.pls_god_can_buy = []
     
 
     def check_store_y(self):
@@ -117,7 +117,6 @@ class CookieVision:
 
             if max_val >= threshold:
                 self.upgrade_y_start += 76
-                self.structures_y_start += 76
                 self.structures_h -= 76
                 print("Sucesso no 1º Check")
 
@@ -142,7 +141,6 @@ class CookieVision:
 
             if max_val2 >= threshold:
                 self.upgrade_y_start += 76
-                self.structures_y_start += 76
                 self.structures_h -= 76
                 print("Sucesso no 2º check.")
                 return  
@@ -163,62 +161,102 @@ class CookieVision:
 
 
     def get_upgrade(self):
-
         store_x_start = self.right_block_x_start
-        upgrade_w = self.upgrade_w
-
         upgrade_y_start = self.upgrade_y_start
-        upgrade_height = self.upgrade_h
+        upgrade_w = self.upgrade_w
+        upgrade_h = self.upgrade_h
 
+
+    
         raw_upgrades = np.array(self.sct.grab({
-            "top": 2 + upgrade_y_start,
+            "top": upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
             "width": upgrade_w,
-            "height": upgrade_height
+            "height": upgrade_h
         }))
 
-        img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
-        img_lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-        l_channel = img_lab[:, :, 0]
-        
-        rectangle_y, rectangle_h, rectangle_x, rectangle_w = 1, 55, 1, 55
-        roi_upgrade = l_channel[rectangle_y:rectangle_h, rectangle_x:rectangle_w]
+        center_x = store_x_start + 30
+        center_y = upgrade_y_start + 30
 
-        pixels = roi_upgrade.flatten()
 
-        pixels_ordenados = np.sort(pixels)
-        
-        quantidade_top = int(len(pixels_ordenados) * 0.15)
-        top_pixels = pixels_ordenados[-quantidade_top:]
-        
-        brilho_upgrade = np.mean(top_pixels)
-
-        pode_comprar = brilho_upgrade >= 120
-
-        self.pls_god.append(brilho_upgrade)
         if self.debug:
-            
-            print(f"Brilho do upgrade: {brilho_upgrade}")
-            debug_img = l_channel.copy()
-            cv2.rectangle(debug_img, (rectangle_x, rectangle_y), (rectangle_w, rectangle_h), (255, 255, 255), 2)
-            cv2.putText(debug_img, "ROI", (rectangle_x + 1, rectangle_y + 1), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-
-            cv2.imshow("Debug Upgrades", debug_img)
+            img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
+            cv2.circle(img_bgr, (30, 30), 2, (0, 255, 0), 1)
+            cv2.imshow("Debug Upgrades - Scan", img_bgr)
             cv2.waitKey(1)
 
-        if pode_comprar:
-            self.pls_god_can_buy.append(brilho_upgrade)
-            cX_real = store_x_start + (rectangle_w // 2)
-            cY_real = upgrade_y_start + (rectangle_h // 2)
-            return (cX_real, cY_real)
-            
-        return None
+        
+        return center_x, center_y
+
+
+        
+        """
+        
+        
+        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+
+        h, s, v = cv2.split(hsv)
+
+        # Mata saturação, vulgo retira cor
+        s = cv2.multiply(s, 0.2).astype(np.uint8)
+
+        v = cv2.convertScaleAbs(v, alpha=0.3, beta=10)
+
+        hsv_obsoleto = cv2.merge([h, s, v])
+        img = cv2.cvtColor(hsv_obsoleto, cv2.COLOR_HSV2BGR)
+
+        if self.debug:
+            upgrade_debug_img = img.copy()
+
+        box_size = 10
+        step = 5
+        threshold = 35
+        target = [None]
+        
+        found = False
+        for y in range(0, upgrade_h - box_size, step):
+            for x in range(0, upgrade_w - box_size, step):
+                
+                roi = img[y : y + box_size, x : x + box_size]
+                avg_brightness = np.mean(roi)
+
+                #print(f"Upgrade não disponível: {avg_brightness}")
+
+                if self.debug:
+                    cv2.rectangle(upgrade_debug_img, (x, y), (x + box_size, y + box_size), (100, 100, 100), 1)
+
+                if avg_brightness > threshold:
+
+                    center_x = x 
+                    center_y = y - (box_size // 2) 
+                    
+                    cx_real = store_x_start + center_x
+                    cy_real = upgrade_y_start + center_y
+
+                    target = [(cx_real, cy_real)]
+                    
+                    if self.debug:
+
+                        cv2.rectangle(upgrade_debug_img, (x, y), (x + box_size, y + box_size), (255, 255, 255), 2)
+                        print(f"Upgrade disponível! (X={cx_real}, Y={cy_real}) - Brilho: {avg_brightness:.2f}")
+                    
+                    found = True
+                    break 
+            if found:
+                break 
+
+        if self.debug:
+            cv2.imshow("Debug Upgrades - Scan", upgrade_debug_img)
+            cv2.waitKey(1)
+
+        return target
+        """
 
 
     def get_structure(self):
             store_x_start = self.right_block_x_start
             
-            structures_y_start = self.structures_y_start
+            structures_y_start = self.upgrade_y_start
             structures_w = self.structures_w
             structures_h = self.structures_h
 
@@ -244,7 +282,7 @@ class CookieVision:
             
             box_size = 40
             step = 20
-            threshold = 210
+            threshold = 215
 
             found_in_row = False
             
@@ -267,7 +305,7 @@ class CookieVision:
                         if avg_brightness > max_brightness_row:
                             max_brightness_row = avg_brightness
                             center_x = x + (box_size // 2)
-                            center_y = y + (box_size // 2)
+                            center_y = y - (box_size // 2)
                             
                             best_block_in_row = (center_x, center_y, avg_brightness, x, y)
                 
