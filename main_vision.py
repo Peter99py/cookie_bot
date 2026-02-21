@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-from src.action.clicker import clicar_no_biscoito, scroll_no_cookie
-from src.vision.cookie_vision import CookieVision
+from src.action import clicar_no_biscoito, scroll_no_cookie
+from src.vision import CookieVision
 
 ENABLE_GOLDEN_COOKIE   = True
 ENABLE_STORE           = True

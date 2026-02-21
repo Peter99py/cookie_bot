@@ -1,7 +1,7 @@
 import time
 from datetime import datetime
-from src.action.clicker import clicar_no_biscoito
-from src.window_finder.window_finder import Beholder
+from src.action import clicar_no_biscoito
+from src.window_finder import Beholder
 
 ENABLE_CLICKING        = True
 ENABLE_SUGAR_CLICKING  = True

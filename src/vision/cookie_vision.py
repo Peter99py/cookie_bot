@@ -6,7 +6,7 @@ from typing import Optional
 import cv2
 import numpy as np
 from mss import mss
-from src.window_finder.window_finder import Beholder
+from src.window_finder import Beholder
 
 
 # cv2.circle(store_debug_img, centro, raio, cor, espessura)
