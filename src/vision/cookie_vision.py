@@ -1,14 +1,36 @@
+from __future__ import annotations
+
+import time
+from typing import Optional
+
 import cv2
 import numpy as np
 from mss import mss
 from src.window_finder.window_finder import Beholder
-import time
 
 
 # cv2.circle(store_debug_img, centro, raio, cor, espessura)
 
+
 class CookieVision:
-    def __init__(self, debug=False):
+    # --- Layout ratios ---
+    LEFT_BLOCK_WIDTH_RATIO: float = 0.3020833333
+    RIGHT_BLOCK_WIDTH_RATIO: float = 0.1666666666
+    RIGHT_BLOCK_VISIBLE_RATIO: float = 0.16
+    UPGRADE_Y_RATIO: float = 0.0787037037
+    UPGRADE_H_RATIO: float = 0.06
+    STRUCTURES_BOTTOM_MARGIN_RATIO: float = 0.0462962962
+    STRUCTURES_WIDTH_RATIO: float = 0.94
+    UPGRADE_WIDTH_RATIO: float = 0.2
+    STORE_ROW_HEIGHT: int = 76
+
+    # --- Vision thresholds ---
+    MIN_OPACITY: int = 240
+    MIN_GOLDEN_CONTOUR_SIZE: int = 60
+    MORPHOLOGY_KERNEL_SIZE: int = 10
+    DEBUG_SCALE: float = 0.4
+
+    def __init__(self, debug: bool = False) -> None:
         self.sct = mss()
         self.debug = debug
         
@@ -26,22 +48,20 @@ class CookieVision:
             "upper": np.array([10, 220, 100])
             }
 
-        self.min_opacidade = 240
-
-        self.count_golden = 0
-        self.count_wrath = 0
+        self.count_golden: int = 0
+        self.count_wrath: int = 0
         
-        self.beholder = Beholder()
-        self.hwnd = self.beholder.hwnd
-        self.rect = self.beholder.rect
+        self.beholder: Beholder = Beholder()
+        self.hwnd: int = self.beholder.hwnd
+        self.rect: dict[str, int] = self.beholder.rect
 
-        self.template_pop_up = cv2.imread("src/assets/fechar_pop_up.png")
-        self.template_hand_of_fate = cv2.imread("src/assets/hand_of_fate.png")
+        self.template_pop_up = self._load_template("src/assets/fechar_pop_up.png")
+        self.template_hand_of_fate = self._load_template("src/assets/hand_of_fate.png")
         self.check_store_templates = {
-            "milk_button": cv2.imread("src/assets/milk_button.png"),
-            "festive_biscuit": cv2.imread("src/assets/festive_biscuit_button.png"),
-            "ghostly_biscuit": cv2.imread("src/assets/ghostly_biscuits_button.png"),
-            "lovesick_biscuit": cv2.imread("src/assets/lovesick_biscuito_button.png")
+            "milk_button": self._load_template("src/assets/milk_button.png"),
+            "festive_biscuit": self._load_template("src/assets/festive_biscuit_button.png"),
+            "ghostly_biscuit": self._load_template("src/assets/ghostly_biscuits_button.png"),
+            "lovesick_biscuit": self._load_template("src/assets/lovesick_biscuito_button.png")
         }
         """
         # Templates estruturas
@@ -71,28 +91,39 @@ class CookieVision:
         """
 
         # Largura dos blocos
+        w = self.rect["width"]
+        h = self.rect["height"]
+
         # Bloco da esquerda
-        self.left_block_x_start = int(self.rect["left"])
-        self.left_block_w = int(self.rect["width"] * 0.3020833333)
+        self.left_block_x_start: int = int(self.rect["left"])
+        self.left_block_w: int = int(w * self.LEFT_BLOCK_WIDTH_RATIO)
         # Bloco da direita (Loja)
-        self.right_block_x_start = int(self.rect["width"] - self.rect["width"] * 0.1666666666)
-        self.right_block_w = int(self.rect["width"] * 0.16)
+        self.right_block_x_start: int = int(w - w * self.RIGHT_BLOCK_WIDTH_RATIO)
+        self.right_block_w: int = int(w * self.RIGHT_BLOCK_VISIBLE_RATIO)
         # Bloco do meio
-        self.middle_block_x_start = self.left_block_x_start + self.left_block_w
-        self.middle_block_w = self.rect["width"] - self.left_block_w - self.right_block_w
+        self.middle_block_x_start: int = self.left_block_x_start + self.left_block_w
+        self.middle_block_w: int = w - self.left_block_w - self.right_block_w
         # Bloco Upgrades
-        self.upgrade_y_start = int(self.rect["height"] * 0.0787037037)
-        self.upgrade_h = int(self.rect["height"] * 0.06)
-        self.upgrade_w = int(self.right_block_w * 0.2)
+        self.upgrade_y_start: int = int(h * self.UPGRADE_Y_RATIO)
+        self.upgrade_h: int = int(h * self.UPGRADE_H_RATIO)
+        self.upgrade_w: int = int(self.right_block_w * self.UPGRADE_WIDTH_RATIO)
         # Bloco Structures
-        self.structures_w = int(self.right_block_w * 0.94)
-        self.structures_h = int(self.rect["height"] - self.upgrade_y_start - self.rect["height"] * 0.0462962962)
+        self.structures_w: int = int(self.right_block_w * self.STRUCTURES_WIDTH_RATIO)
+        self.structures_h: int = int(h - self.upgrade_y_start - h * self.STRUCTURES_BOTTOM_MARGIN_RATIO)
 
         #self.pls_god= []
         #self.pls_god_can_buy = []
     
 
-    def check_store_y(self):
+    @staticmethod
+    def _load_template(path: str) -> np.ndarray:
+        """Carrega um template de imagem e valida a leitura."""
+        template = cv2.imread(path)
+        if template is None:
+            raise FileNotFoundError(f"Template não encontrado: '{path}'")
+        return template
+
+    def check_store_y(self) -> None:
 
         store_x_start = self.right_block_x_start
         righ_block_w = self.right_block_w
@@ -116,8 +147,8 @@ class CookieVision:
             print(f"1 º Check - template {name} - Valor: {max_val}")
 
             if max_val >= threshold:
-                self.upgrade_y_start += 76
-                self.structures_h -= 76
+                self.upgrade_y_start += self.STORE_ROW_HEIGHT
+                self.structures_h -= self.STORE_ROW_HEIGHT
                 print("Sucesso no 1º Check")
 
                 return            
@@ -140,34 +171,34 @@ class CookieVision:
             print(f"2 º Check - template {name2} - Valor: {max_val2}")
 
             if max_val2 >= threshold:
-                self.upgrade_y_start += 76
-                self.structures_h -= 76
+                self.upgrade_y_start += self.STORE_ROW_HEIGHT
+                self.structures_h -= self.STORE_ROW_HEIGHT
                 print("Sucesso no 2º check.")
                 return  
 
         print("Matendo a altura da loja como default.")
 
 
-    def rect_check(self):
-        # Atualiza o rect para a posição atual do beholder
+    def rect_check(self) -> bool:
+        """Verifica se a janela do jogo mudou de posição."""
         new_rect = self.beholder.get_window_rect()
         return new_rect == self.rect
 
     
-    def get_screenshot(self):
+    def get_screenshot(self) -> Optional[np.ndarray]:
+        """Captura screenshot da janela do jogo."""
         if self.rect:
             screenshot = np.array(self.sct.grab(self.rect))
             return screenshot
+        return None
 
 
-    def get_upgrade(self):
+    def get_upgrade(self) -> list[Optional[tuple[int, int]]]:
         store_x_start = self.right_block_x_start
         upgrade_y_start = self.upgrade_y_start
         upgrade_w = self.upgrade_w
         upgrade_h = self.upgrade_h
 
-
-    
         raw_upgrades = np.array(self.sct.grab({
             "top": upgrade_y_start,
             "left": self.rect["left"] + store_x_start,
@@ -175,31 +206,13 @@ class CookieVision:
             "height": upgrade_h
         }))
 
-        center_x = store_x_start + 30
-        center_y = upgrade_y_start + 30
-
-
-        if self.debug:
-            img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
-            cv2.circle(img_bgr, (30, 30), 2, (0, 255, 0), 1)
-            cv2.imshow("Debug Upgrades - Scan", img_bgr)
-            cv2.waitKey(1)
-
-        
-        return center_x, center_y
-
-
-        
-        """
-        
-        
+        img_bgr = cv2.cvtColor(raw_upgrades, cv2.COLOR_BGRA2BGR)
         hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
 
         h, s, v = cv2.split(hsv)
 
         # Mata saturação, vulgo retira cor
         s = cv2.multiply(s, 0.2).astype(np.uint8)
-
         v = cv2.convertScaleAbs(v, alpha=0.3, beta=10)
 
         hsv_obsoleto = cv2.merge([h, s, v])
@@ -212,48 +225,44 @@ class CookieVision:
         step = 5
         threshold = 35
         target = [None]
-        
+
         found = False
         for y in range(0, upgrade_h - box_size, step):
             for x in range(0, upgrade_w - box_size, step):
-                
+
                 roi = img[y : y + box_size, x : x + box_size]
                 avg_brightness = np.mean(roi)
-
-                #print(f"Upgrade não disponível: {avg_brightness}")
 
                 if self.debug:
                     cv2.rectangle(upgrade_debug_img, (x, y), (x + box_size, y + box_size), (100, 100, 100), 1)
 
                 if avg_brightness > threshold:
 
-                    center_x = x 
-                    center_y = y - (box_size // 2) 
-                    
+                    center_x = x
+                    center_y = y - (box_size // 2)
+
                     cx_real = store_x_start + center_x
                     cy_real = upgrade_y_start + center_y
 
                     target = [(cx_real, cy_real)]
-                    
-                    if self.debug:
 
+                    if self.debug:
                         cv2.rectangle(upgrade_debug_img, (x, y), (x + box_size, y + box_size), (255, 255, 255), 2)
                         print(f"Upgrade disponível! (X={cx_real}, Y={cy_real}) - Brilho: {avg_brightness:.2f}")
-                    
+
                     found = True
-                    break 
+                    break
             if found:
-                break 
+                break
 
         if self.debug:
             cv2.imshow("Debug Upgrades - Scan", upgrade_debug_img)
             cv2.waitKey(1)
 
         return target
-        """
 
 
-    def get_structure(self):
+    def get_structure(self) -> list[Optional[tuple[int, int]]]:
             store_x_start = self.right_block_x_start
             
             structures_y_start = self.upgrade_y_start
@@ -284,7 +293,7 @@ class CookieVision:
             step = 20
             threshold = 215
 
-            found_in_row = False
+
             
             for y in range(structures_h - box_size, 0, -step):
                 
@@ -322,7 +331,7 @@ class CookieVision:
                         cv2.rectangle(store_debug_img, (rx, ry), (rx + box_size, ry + box_size), (0, 255, 0), 2)
                         print(f"Estrutura encontrada (X={cx_real}) - (Y={cy_real}) - Brilho: {brilho:.2f}")
                     
-                    found_in_row = True
+
                     break
 
             if self.debug:
@@ -332,12 +341,12 @@ class CookieVision:
             return target
     
 
-    def find_any_golden(self):
+    def find_any_golden(self) -> Optional[tuple[int, int, str]]:
 
         screenshot = self.get_screenshot()
 
         alpha_channel = screenshot[:, :, 3]
-        _, alpha_mask = cv2.threshold(alpha_channel, self.min_opacidade, 255, cv2.THRESH_BINARY)
+        _, alpha_mask = cv2.threshold(alpha_channel, self.MIN_OPACITY, 255, cv2.THRESH_BINARY)
 
         img_bgr = cv2.cvtColor(screenshot, cv2.COLOR_BGRA2BGR)
         hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
@@ -353,13 +362,12 @@ class CookieVision:
             color_mask = cv2.inRange(hsv, color_cfg["lower"], color_cfg["upper"])
             combined_mask = cv2.bitwise_and(color_mask, alpha_mask)
 
-            kernel = np.ones((10, 10), np.uint8) 
+            kernel = np.ones((self.MORPHOLOGY_KERNEL_SIZE, self.MORPHOLOGY_KERNEL_SIZE), np.uint8) 
             mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel)
             mask = cv2.dilate(mask, kernel, iterations=1)
   
             if self.debug:
-                escala = 0.4
-                debug_img = cv2.resize(mask, (0,0), fx=escala, fy=escala)
+                debug_img = cv2.resize(mask, (0,0), fx=self.DEBUG_SCALE, fy=self.DEBUG_SCALE)
                 cv2.imshow(f"Debug - {color_cfg['name']}", debug_img)
                 cv2.waitKey(1)
 
@@ -367,7 +375,7 @@ class CookieVision:
             
             for cnt in contours:
                 x, y, w, h = cv2.boundingRect(cnt)
-                if w >= 60 and h >= 60:
+                if w >= self.MIN_GOLDEN_CONTOUR_SIZE and h >= self.MIN_GOLDEN_CONTOUR_SIZE:
                     M = cv2.moments(cnt)
                     if M["m00"] != 0:
                         cX = int(M["m10"] / M["m00"])
@@ -387,7 +395,7 @@ class CookieVision:
         return None
     
 
-    def pop_up_killer(self):
+    def pop_up_killer(self) -> Optional[tuple[int, int]]:
 
         pop_ups_x_start = self.middle_block_x_start
         pop_ups_w = self.middle_block_w
@@ -436,7 +444,7 @@ class CookieVision:
         return points[-1] if points else None
 
 
-    def hand_of_fate(self):
+    def hand_of_fate(self) -> Optional[tuple[int, int, float]]:
         
         middle_x_start = self.middle_block_x_start
         middle_w = self.middle_block_w
@@ -476,7 +484,7 @@ class CookieVision:
             return real_center_x, real_center_y, max_val
 
 
-    def vision_test(self, vision_x, vision_y, vision_w, vision_h, x, y):
+    def vision_test(self, vision_x: int, vision_y: int, vision_w: int, vision_h: int, x: int, y: int) -> bool:
 
         raw_store = np.array(self.sct.grab({
             "top": vision_y,

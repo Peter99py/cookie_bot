@@ -51,4 +51,5 @@ def flaming_fingers():
         print("\nBot encerrado.")
 
 
-flaming_fingers()
+if __name__ == "__main__":
+    flaming_fingers()
